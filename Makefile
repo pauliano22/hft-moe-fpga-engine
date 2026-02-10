@@ -54,9 +54,9 @@ run_golden: $(BUILD_DIR)/golden_model
 verilator_build: | $(SIM_DIR)
 	$(VERILATOR) $(VL_FLAGS) \
 		-Mdir $(SIM_DIR) \
-		$(RTL_DIR)/axi_stream_pkg.sv \
-		$(RTL_DIR)/itch_parser.sv \
-		$(TB_DIR)/tb_itch_parser.cpp
+		$(CURDIR)/$(RTL_DIR)/axi_stream_pkg.sv \
+		$(CURDIR)/$(RTL_DIR)/itch_parser.sv \
+		$(CURDIR)/$(TB_DIR)/tb_itch_parser.cpp
 
 verilator_run: verilator_build
 	@echo "=== Running Verilator Simulation ==="
