@@ -28,7 +28,9 @@ module itch_parser
 
     // AXI-Stream Slave (from 10GbE MAC)
     input  logic [AXIS_DATA_WIDTH-1:0]  s_axis_tdata,
+    /* verilator lint_off UNUSEDSIGNAL */
     input  logic [AXIS_KEEP_WIDTH-1:0]  s_axis_tkeep,
+    /* verilator lint_on UNUSEDSIGNAL */
     input  logic                        s_axis_tvalid,
     input  logic                        s_axis_tlast,
     output logic                        s_axis_tready,
@@ -69,9 +71,6 @@ module itch_parser
     logic [63:0] stock_acc;
     logic [31:0] price_acc;
     logic        side_acc;
-
-    // Output staging
-    logic        order_valid_next;
 
     // -------------------------------------------------------------------------
     // Always accept data (backpressure-free for line-rate operation)
