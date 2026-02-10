@@ -1,0 +1,29 @@
+# Build artifacts
+build/
+sim/verilator/
+
+# Vivado / Vitis HLS project files
+*.xpr
+*.runs/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.log
+*.jou
+
+# Waveforms (large binary files — keep samples in docs/)
+*.vcd
+*.fst
+*.ghw
+
+# Editor
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Traces (regenerated)
+golden_trace.csv

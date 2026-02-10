@@ -1,0 +1,55 @@
+name: CI — Golden Model & Verification
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  golden-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential valgrind
+
+      - name: Build golden model
+        run: make golden_model
+
+      - name: Run golden model
+        run: make run_golden
+
+      - name: Valgrind memory check
+        run: make validate
+
+      - name: Upload trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-trace
+          path: build/golden_trace.csv
+
+  verilator-sim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Verilator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator build-essential
+
+      - name: Build Verilator simulation
+        run: make verilator_build
+
+      - name: Run simulation
+        run: make verilator_run
+
+      - name: Upload waveform
+        uses: actions/upload-artifact@v4
+        with:
+          name: waveform
+          path: sim/verilator/itch_parser.fst
