@@ -373,7 +373,7 @@ public:
 // =============================================================================
 // Main — Golden Model Driver
 // =============================================================================
-int main(int argc, char* argv[]) {
+int main(int /*argc*/, char* /*argv*/[]) {
     std::cout << "=== FPGA MoE Trading Engine — Golden Model ===" << std::endl;
     std::cout << "Building reference outputs for Verilator verification" << std::endl;
     std::cout << std::endl;

@@ -1,9 +1,12 @@
 # ==============================================================================
 # FPGA MoE Trading Engine — Build System
 # ==============================================================================
+#
+# This Makefile orchestrates all build, simulation, and verification targets.
+# Run `make help` to see available targets.
 
 .PHONY: all clean golden_model run_golden verilator_build verilator_run \
-        verify waves validate help
+        verify waves validate help generate_data verify_trace
 
 # Directories
 SRC_DIR     = src
@@ -63,12 +66,26 @@ verilator_run: verilator_build
 	cd $(SIM_DIR) && ./Vitch_parser
 
 # ==============================================================================
+# Test Data Generation
+# ==============================================================================
+generate_data:
+	@echo "=== Generating ITCH Test Data ==="
+	python3 tools/generate_itch_data.py --synthetic --num-orders 1000 \
+		--output data/synthetic_orders.bin --csv data/synthetic_orders.csv
+	python3 tools/generate_itch_data.py --input data/sample_prices.csv \
+		--output data/test_orders.bin --csv data/test_orders.csv
+
+# ==============================================================================
 # Verification
 # ==============================================================================
 verify: run_golden verilator_run
 	@echo "=== Comparing Golden Model vs Hardware ==="
 	@echo "Golden trace:  $(BUILD_DIR)/golden_trace.csv"
 	@echo "HW waveform:   $(SIM_DIR)/itch_parser.fst"
+
+verify_trace:
+	@echo "=== Running Bit-Accuracy Verification ==="
+	python3 sim/scripts/verify_trace.py --self-test
 
 # ==============================================================================
 # Valgrind Memory Check
@@ -102,6 +119,8 @@ help:
 	@echo "  make verilator_build Build Verilator simulation"
 	@echo "  make verilator_run   Run cycle-accurate simulation"
 	@echo "  make verify          Compare golden model vs hardware"
+	@echo "  make verify_trace    Run bit-accuracy self-test"
 	@echo "  make validate        Run Valgrind memory check"
+	@echo "  make generate_data   Generate ITCH test data files"
 	@echo "  make waves           Open waveforms in GTKWave"
 	@echo "  make clean           Remove build artifacts"
