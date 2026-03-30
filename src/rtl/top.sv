@@ -60,6 +60,7 @@ logic [31:0] parser_shares;
 logic [31:0] parser_price;
 /* verilator lint_off UNUSED */
 logic [15:0] parser_stock_locate;  // wired from parser; not forwarded to order book
+logic [15:0] ob_latency_cycles;    // order_book internal latency output (unused; top counts separately)
 /* verilator lint_on UNUSED */
 
 // -------------------------------------------------------------------------
@@ -105,7 +106,7 @@ order_book u_order_book (
     .spread        (spread),
     .mid_price     (mid_price),
     .book_valid    (book_valid),
-    .latency_cycles(latency_counter)
+    .latency_cycles(ob_latency_cycles)
 );
 
 // -------------------------------------------------------------------------
