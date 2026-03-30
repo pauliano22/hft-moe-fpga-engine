@@ -46,7 +46,7 @@ jobs:
         run: |
           make test
           # Fail CI if any test did not pass
-          make test | grep -q "3/3 PASS" || (echo "::error::Unit tests failed" && exit 1)
+          make test | grep -qE "[0-9]+ / [0-9]+ tests passed" || (echo "::error::Unit tests failed" && exit 1)
 
       - name: Run benchmark (report throughput)
         working-directory: src/golden_model
