@@ -18,6 +18,11 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#if defined(_WIN32)
+#  include <windows.h>
+#else
+#  include <time.h>
+#endif
 
 // -------------------------------------------------------------------------
 // Portable nanosecond timer
@@ -31,20 +36,17 @@
 // -------------------------------------------------------------------------
 static uint64_t now_ns() {
 #if defined(_WIN32)
-    // Windows: use QueryPerformanceCounter for nanosecond resolution
-    #include <windows.h>
     LARGE_INTEGER freq, count;
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&count);
     return static_cast<uint64_t>(count.QuadPart * 1000000000LL / freq.QuadPart);
 #else
-    #include <time.h>
     struct timespec ts;
-    #ifdef CLOCK_MONOTONIC_RAW
-        clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    #else
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-    #endif
+#  ifdef CLOCK_MONOTONIC_RAW
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+#  else
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+#  endif
     return static_cast<uint64_t>(ts.tv_sec) * 1000000000ULL +
            static_cast<uint64_t>(ts.tv_nsec);
 #endif
