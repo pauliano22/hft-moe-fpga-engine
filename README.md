@@ -28,7 +28,7 @@
   Total pipeline depth: ~18 cycles × 4 ns = ~72 ns  (wire-to-trade-signal)
 ```
 
----
+## Architecture Overview
 
 ## Performance Results
 
@@ -46,7 +46,11 @@
 
 > **Note:** Golden model numbers are measured on WSL/Ubuntu 22.04. Native Linux will be ~2–3× faster. HLS synthesis numbers require Vitis HLS 2022.1+ — see Build & Run below.
 
----
+### Verification & Profiling ("Rigor Layer")
+- **GDB** — Step-through debugging of C-Simulation
+- **Valgrind** — Zero memory leak verification
+- **Linux Perf** — Simulation profiling & flame graphs
+- **GTKWave** — Waveform visualization
 
 ## How It Works
 
@@ -89,7 +93,7 @@ Real/Synthetic ITCH data
                measurement
 ```
 
----
+## Quick Start
 
 ## Build & Run
 
@@ -166,7 +170,8 @@ python3 sim/scripts/plot_resource_util.py  # → docs/resource_util.png (demo da
 python3 sim/scripts/plot_resource_util.py --report docs/lob_synthesis.rpt
 ```
 
----
+# 3. Build Verilator simulation
+make verilator_build
 
 ## Verification Results
 
