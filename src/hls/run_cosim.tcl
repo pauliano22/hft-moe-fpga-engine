@@ -7,7 +7,7 @@
 # functional correctness — a C-sim pass + cosim fail means a synthesis bug.
 #
 # RUN MANUALLY (after run_synth.tcl):
-#   source /opt/Xilinx/Vitis_HLS/2022.1/settings64.sh
+#   source /tools/Xilinx/Vitis_HLS/2025.2/settings64.sh
 #   cd src/hls && vitis_hls -f run_cosim.tcl
 #
 # Key output: co-simulation latency in clock cycles.

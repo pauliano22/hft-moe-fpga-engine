@@ -1,11 +1,11 @@
 # =============================================================================
 # run_csim.tcl — Vitis HLS C-simulation script
 #
-# RUN MANUALLY:
-#   source /opt/Xilinx/Vitis_HLS/2022.1/settings64.sh
-#   cd src/hls/matching_engine && vitis_hls -f ../run_csim.tcl lob
-#   cd src/hls/moe_router      && vitis_hls -f ../run_csim.tcl moe_router
-#   cd src/hls/experts         && vitis_hls -f ../run_csim.tcl expert_kernel
+# RUN MANUALLY (2025.x — Linux install in WSL):
+#   source /tools/Xilinx/Vitis_HLS/2025.2/settings64.sh
+#   cd src/hls && vitis_hls -f run_csim.tcl lob
+#   cd src/hls && vitis_hls -f run_csim.tcl moe_router
+#   cd src/hls && vitis_hls -f run_csim.tcl expert_kernel
 #
 # The first argument ($argv) is the module name (lob, moe_router, expert_kernel).
 # =============================================================================

@@ -4,8 +4,12 @@
 # Synthesizes all three HLS modules and generates timing/resource reports.
 # Reports are saved to solution1/syn/report/ in each module directory.
 #
-# RUN MANUALLY:
-#   source /opt/Xilinx/Vitis_HLS/2022.1/settings64.sh
+# RUN MANUALLY (2025.x — Linux install in WSL):
+#   source /tools/Xilinx/Vitis_HLS/2025.2/settings64.sh
+#   cd src/hls && vitis_hls -f run_synth.tcl
+#
+# RUN MANUALLY (2025.x — Windows install, called from WSL):
+#   source /mnt/c/AMD/Vitis_HLS/2025.2/settings64.sh
 #   cd src/hls && vitis_hls -f run_synth.tcl
 #
 # Key outputs to capture for the resume/README:
@@ -34,8 +38,18 @@ proc synth_module {module top_fn src_files} {
     csynth_design
 
     # Save reports to a known location
-    file copy -force solution1/syn/report/${top_fn}_csynth.rpt \
-                     ../../docs/${module}_synthesis.rpt
+    # In 2025.x the report file is still at solution1/syn/report/<top>_csynth.rpt
+    # If this copy fails, check: ls solution1/syn/report/
+    if {[file exists "solution1/syn/report/${top_fn}_csynth.rpt"]} {
+        file copy -force "solution1/syn/report/${top_fn}_csynth.rpt" \
+                         "../../docs/${module}_synthesis.rpt"
+    } else {
+        # 2025.x fallback: try csynth.rpt (some versions drop the function prefix)
+        foreach f [glob -nocomplain "solution1/syn/report/*csynth*.rpt"] {
+            file copy -force $f "../../docs/${module}_synthesis.rpt"
+            break
+        }
+    }
 
     close_solution
     close_project
