@@ -78,7 +78,6 @@ Desktop.ini
 # -----------------------------------------------------------------------
 sim/results/
 sim/verilator/latencies.csv
-docs/*.png
 docs/*.pdf
 docs/*_synthesis.rpt
 docs/*_utilization.rpt
