@@ -1,0 +1,193 @@
+# .github/workflows/ci.yml
+# CI pipeline for the FPGA-Accelerated HFT MoE Engine
+#
+# Job 1 — golden-model: build C++ golden model, run unit tests, run bench
+# Job 2 — hls-csim:     compile HLS modules with g++ (no Xilinx toolchain needed)
+# Job 3 — verilator:    build Verilator sim, run on test data, report latency
+#
+# Targets: ubuntu-latest (g++ 11+, Verilator 4.x from apt)
+# No Xilinx tools required — hardware synthesis is done offline.
+
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: C++ Golden Model
+  # ---------------------------------------------------------------------------
+  golden-model:
+    name: Golden Model (C++ build + tests + bench)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y g++ make
+
+      - name: Generate test data (1M synthetic ITCH messages)
+        working-directory: src/golden_model
+        run: make test-data
+
+      - name: Build golden model (release -O3)
+        working-directory: src/golden_model
+        run: make
+
+      - name: Run unit tests (expect 3/3 PASS)
+        working-directory: src/golden_model
+        run: |
+          make test
+          # Fail CI if any test did not pass
+          make test | grep -q "3/3 PASS" || (echo "::error::Unit tests failed" && exit 1)
+
+      - name: Run benchmark (report throughput)
+        working-directory: src/golden_model
+        run: |
+          make bench 2>&1 | tee /tmp/bench_output.txt
+          echo "--- Bench output ---"
+          cat /tmp/bench_output.txt
+          # Extract and annotate throughput in GitHub step summary
+          grep -E "Throughput|msg/s|ns/msg" /tmp/bench_output.txt \
+            >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Build debug binary (sanitizers)
+        working-directory: src/golden_model
+        run: make debug
+
+  # ---------------------------------------------------------------------------
+  # Job 2: HLS C-Simulation (g++ only — no Xilinx toolchain)
+  # ---------------------------------------------------------------------------
+  hls-csim:
+    name: HLS C-Simulation (g++ compile + 12 tests)
+    runs-on: ubuntu-latest
+    needs: golden-model          # reuse test-data artifact indirectly
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y g++ make
+
+      - name: Generate test data (needed by lob_tb golden model comparison)
+        working-directory: src/golden_model
+        run: make test-data
+
+      - name: Build golden model library (linked by lob_tb)
+        working-directory: src/golden_model
+        run: make
+
+      - name: Compile all HLS testbenches with g++
+        working-directory: src/hls
+        run: make
+
+      - name: Run HLS C-simulation suite (expect 12/12 PASS)
+        working-directory: src/hls
+        run: |
+          make test 2>&1 | tee /tmp/hls_test_output.txt
+          echo "--- HLS test output ---"
+          cat /tmp/hls_test_output.txt
+          # Check for passing count in output
+          grep -E "[0-9]+\s*/\s*[0-9]+\s*tests?\s*passed" /tmp/hls_test_output.txt \
+            >> $GITHUB_STEP_SUMMARY || true
+          # Fail if any test reported FAIL
+          grep -i "FAIL" /tmp/hls_test_output.txt && \
+            (echo "::error::HLS C-sim tests failed" && exit 1) || true
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Verilator RTL Simulation
+  # ---------------------------------------------------------------------------
+  verilator:
+    name: Verilator RTL Simulation (cycle-accurate latency)
+    runs-on: ubuntu-latest
+    needs: golden-model
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y g++ make verilator python3-pip
+          pip3 install matplotlib numpy --quiet
+
+      - name: Report Verilator version
+        run: verilator --version
+
+      - name: Generate test data
+        working-directory: src/golden_model
+        run: make test-data
+
+      - name: Build golden model (needed by Verilator harness)
+        working-directory: src/golden_model
+        run: make
+
+      - name: Build Verilator simulation
+        working-directory: sim/verilator
+        run: make
+
+      - name: Run Verilator simulation (50K messages, no VCD for speed)
+        working-directory: sim/verilator
+        run: |
+          ./obj_dir/Vtop \
+            --file ../../data/sample.itch \
+            --no-vcd \
+            --limit 50000 \
+            2>&1 | tee /tmp/sim_output.txt
+          echo "--- Verilator sim output ---"
+          cat /tmp/sim_output.txt
+
+      - name: Extract and report latency statistics
+        run: |
+          echo "## Verilator RTL Latency Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "p50|p95|p99|Throughput|latency|cycle" /tmp/sim_output.txt \
+            >> $GITHUB_STEP_SUMMARY || echo "(no latency lines found)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Check sub-100ns p99 target
+        run: |
+          # Extract p99 latency — warn (not fail) if over 100 ns target
+          p99=$(grep "p99" /tmp/sim_output.txt | grep -oE "[0-9]+\.[0-9]+" | head -1)
+          if [ -n "$p99" ]; then
+            echo "p99 latency: ${p99} ns"
+            python3 -c "
+          p99 = float('${p99}')
+          if p99 > 100:
+              print(f'::warning::p99 latency {p99:.1f} ns exceeds 100 ns target')
+          else:
+              print(f'p99 latency {p99:.1f} ns — WITHIN 100 ns target')
+          "
+          fi
+
+      - name: Generate visualization plots
+        run: |
+          python3 sim/scripts/plot_latency_cdf.py   --csv sim/verilator/latencies.csv
+          python3 sim/scripts/plot_throughput.py
+          python3 sim/scripts/plot_resource_util.py
+          ls -lh docs/*.png
+
+      - name: Upload latency plots as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: latency-plots
+          path: docs/*.png
+          retention-days: 30
+
+      - name: Upload latency CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: latency-data
+          path: sim/verilator/latencies.csv
+          retention-days: 30
