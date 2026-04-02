@@ -64,14 +64,12 @@ synth_module lob process_messages {
 # ---- MoE Router ----
 synth_module moe_router route_message {
     moe_router/moe_router.cpp
-    matching_engine/lob.cpp
 }
 
 # ---- Expert Kernel ----
 synth_module expert_kernel combine_experts {
     experts/expert_kernel.cpp
     moe_router/moe_router.cpp
-    matching_engine/lob.cpp
 }
 
 puts "=== All synthesis runs complete ==="

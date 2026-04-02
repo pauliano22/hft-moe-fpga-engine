@@ -46,7 +46,7 @@
 // Book parameters — changing these changes BRAM usage and price range.
 // MAX_PRICE_LEVELS must be a power of 2 for ARRAY_PARTITION.
 // -------------------------------------------------------------------------
-static const int MAX_PRICE_LEVELS     = 2048;   // $0.01 ticks × 2048 = $20.47 range
+static const int MAX_PRICE_LEVELS     = 64;     // $0.01 ticks × 64 = $0.63 range
 static const int MAX_ORDERS           = 4096;   // simultaneous live orders supported
 static const ap_uint<32> BASE_PRICE   = 1750000; // $175.00 — center of price range
 static const ap_uint<32> TICK_SIZE    = 100;     // $0.01 per tick

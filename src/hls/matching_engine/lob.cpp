@@ -177,8 +177,8 @@ BookUpdate process_one(
     // Why not binary search?
     //   Binary search requires multiple cycles (log2 iterations with data
     //   dependencies). Full unroll trades LUT area for latency — acceptable
-    //   at MAX_PRICE_LEVELS = 2048 on a Xilinx UltraScale+ device with
-    //   ~1.2M LUTs (2048 comparisons ≈ 0.2% of the device).
+    //   at MAX_PRICE_LEVELS = 64 on a Xilinx UltraScale+ device
+    //   (64 comparisons — trivial LUT usage).
     // ------------------------------------------------------------------
     ap_uint<32> best_bid    = 0;
     ap_uint<32> best_ask    = 0;
@@ -259,11 +259,10 @@ void process_messages(
     // ARRAY_PARTITION complete — split each array element into its own
     // register. This eliminates all BRAM read-after-write latency and
     // allows the synthesizer to achieve II=1 on the main loop.
-    // Cost: 2 × 2048 × 32 bits = 128 KB of flip-flops.
+    // Cost: 2 × 64 × 32 bits = 512 bytes of flip-flops.
     //
-    // For larger books (e.g., 64K levels), use cyclic factor=8 instead
-    // to interleave across 8 BRAM banks and reduce FF usage at the cost
-    // of slightly higher initiation interval (II=8 per bank).
+    // For larger books, use cyclic partitioning instead to interleave
+    // across BRAM banks and reduce FF usage at the cost of higher II.
     // ------------------------------------------------------------------
 #pragma HLS ARRAY_PARTITION variable=bid_shares complete
 #pragma HLS ARRAY_PARTITION variable=ask_shares complete
@@ -274,12 +273,13 @@ void process_messages(
     static ap_uint<32> order_price_table[MAX_ORDERS];
     static ap_uint<32> order_shares_table[MAX_ORDERS];
 
-    // Partition order tables too for II=1 — 4 × 4096 × 32b ≈ 512 KB of FFs.
-    // In a real design, URAM (Ultra RAM) would be used here to save area.
-#pragma HLS ARRAY_PARTITION variable=order_ref_table    complete
-#pragma HLS ARRAY_PARTITION variable=order_side_table   complete
-#pragma HLS ARRAY_PARTITION variable=order_price_table  complete
-#pragma HLS ARRAY_PARTITION variable=order_shares_table complete
+    // Order tables are accessed one-at-a-time by hash — dual-port BRAM is
+    // sufficient. No need for complete partitioning (which would consume
+    // 4 × 4096 × 32b ≈ 512 KB of flip-flops).
+#pragma HLS BIND_STORAGE variable=order_ref_table    type=ram_2p impl=bram
+#pragma HLS BIND_STORAGE variable=order_side_table   type=ram_2p impl=bram
+#pragma HLS BIND_STORAGE variable=order_price_table  type=ram_2p impl=bram
+#pragma HLS BIND_STORAGE variable=order_shares_table type=ram_2p impl=bram
 
 MAIN_LOOP:
     for (int i = 0; i < n_messages; ++i) {
