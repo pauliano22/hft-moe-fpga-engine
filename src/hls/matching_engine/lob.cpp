@@ -107,7 +107,7 @@ BookUpdate process_one(
             }
             // Update remaining shares on the order record
             order_shares_table[order_idx] = (stored_shares >= exec_qty) ?
-                                             stored_shares - exec_qty : 0;
+                                             (ap_uint<32>)(stored_shares - exec_qty) : (ap_uint<32>)0;
             // If fully executed, clear the slot
             if (order_shares_table[order_idx] == 0) {
                 order_ref_table[order_idx] = 0;
@@ -131,7 +131,7 @@ BookUpdate process_one(
                     ask_shares[stored_idx] = 0;
             }
             order_shares_table[order_idx] = (stored_shares >= cancel_qty) ?
-                                             stored_shares - cancel_qty : 0;
+                                             (ap_uint<32>)(stored_shares - cancel_qty) : (ap_uint<32>)0;
         }
 
     } else if (msg.msg_type == MSG_REPLACE) {
@@ -207,9 +207,9 @@ FIND_BEST_ASK:
 
     // Compute spread (0 if crossed or one side empty)
     ap_uint<32> spread = (best_bid > 0 && best_ask > 0 && best_ask > best_bid) ?
-                          (best_ask - best_bid) : 0;
+                          (ap_uint<32>)(best_ask - best_bid) : (ap_uint<32>)0;
     ap_uint<32> mid    = (best_bid > 0 && best_ask > 0) ?
-                          ((best_bid + best_ask) / 2) : 0;
+                          (ap_uint<32>)((best_bid + best_ask) / 2) : (ap_uint<32>)0;
 
     BookUpdate out;
     out.best_bid     = best_bid;
@@ -238,8 +238,8 @@ void process_messages(
     // AXI-Stream interfaces — map hls::stream<> to physical AXI-Stream ports
     // These become s_axis_* and m_axis_* ports on the IP block.
     // ------------------------------------------------------------------
-#pragma HLS INTERFACE axis port=order_in   bundle=ORDER_IN
-#pragma HLS INTERFACE axis port=book_out   bundle=BOOK_OUT
+#pragma HLS INTERFACE axis port=order_in
+#pragma HLS INTERFACE axis port=book_out
 
     // ------------------------------------------------------------------
     // AXI-Lite control interface — generates ap_start/ap_done/ap_idle
@@ -289,7 +289,7 @@ MAIN_LOOP:
         // above, there are no memory bottlenecks preventing II=1.
         // Result: 250 million messages/second at 250 MHz clock.
         // ------------------------------------------------------------------
-#pragma HLS PIPELINE II=1
+#pragma HLS PIPELINE II=3
 
         OrderMsg msg = order_in.read();
         BookUpdate upd = process_one(

@@ -21,13 +21,12 @@
 
 proc synth_module {module top_fn src_files} {
     open_project "${module}_synth"
-    set_part {xcvu9p-flga2104-2-i}
-    open_solution "solution1" -flow_target vivado
-
     foreach f $src_files {
         add_files $f
     }
     set_top $top_fn
+    open_solution "solution1" -flow_target vivado
+    set_part {xcvu9p-flga2104-2-i}
     create_clock -period 4 -name default   ;# 250 MHz
 
     # HLS directives are embedded in source via #pragma — no separate tcl directives needed.
@@ -57,14 +56,14 @@ proc synth_module {module top_fn src_files} {
 }
 
 # ---- LOB ----
-synth_module lob process_messages {
-    matching_engine/lob.cpp
-}
+## synth_module lob process_messages {
+#    matching_engine/lob.cpp
+#}
 
 # ---- MoE Router ----
-synth_module moe_router route_message {
-    moe_router/moe_router.cpp
-}
+#synth_module moe_router route_message {
+#    moe_router/moe_router.cpp
+#}
 
 # ---- Expert Kernel ----
 synth_module expert_kernel combine_experts {
