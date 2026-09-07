@@ -67,9 +67,9 @@ This is the most important file. Read it top-to-bottom:
 
 4. **Byte extraction** (line 92): **Critical** — there's no separate `get_byte()` function; a `` `BYTE(beat_data, offset) `` macro extracts byte N within a beat via `beat_data[(offset*8) +: 8]`. TDATA[7:0] holds byte 0 (the first byte to arrive on the wire), so no big-endian/little-endian inversion is needed.
 
-5. **Sequential logic** (lines 103-259): The two `always_ff` blocks run on every clock edge. On reset, everything zeros out. On each valid beat, it accumulates fields byte-by-byte using the `` `BYTE `` macro. **Trace through Test 1 from the testbench by hand** — pretend you're the hardware and process each beat.
+5. **Sequential logic** (lines 103-254): The two `always_ff` blocks run on every clock edge. On reset, everything zeros out. On each valid beat, it accumulates fields byte-by-byte using the `` `BYTE `` macro. **Trace through Test 1 from the testbench by hand** — pretend you're the hardware and process each beat.
 
-6. **Combinational next-state** (lines 261-340): The `always_comb` block computes the next state purely based on current state and inputs. No clock — this is wires, not registers.
+6. **Combinational next-state** (lines 261-328): The `always_comb` block computes the next state purely based on current state and inputs. No clock — this is wires, not registers.
 
 **New concept — `always_ff` vs `always_comb`**:
 - `always_ff` = **registers** (stores values across clock cycles, like variables)
